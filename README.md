@@ -6,7 +6,7 @@ An interactive web-based application that helps users understand and visualize L
 
 ## 🚀 Live Demo
 
-🔗 https://mouly19.github.io/Linear-Regression/
+🔗 https://mouly19.github.io/Linear-Regression-JS/
 
 ---
 
