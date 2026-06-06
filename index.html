@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LinearLearn — Interactive Regression System</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- All fonts and charts are embedded inline — no internet required -->
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -17,7 +16,7 @@
   --red:#e74c3c;--red-dim:rgba(231,76,60,.12);
   --purple:#a78bfa;--purple-dim:rgba(167,139,250,.12);
   --text:#c9d6e8;--text2:#7f8fa4;--text3:#3d4f66;
-  --mono:'JetBrains Mono',monospace;--body:'Outfit',sans-serif;--serif:'Lora',serif;
+  --mono:'Courier New',Consolas,monospace;--body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--serif:Georgia,'Times New Roman',serif;
   --r:10px;--r2:6px;
   --header-bg:linear-gradient(135deg,#070c1a 0%,#0e1930 100%);
 }
@@ -47,7 +46,7 @@ header{background:var(--header-bg);border-bottom:1px solid var(--border);padding
 .logo{width:38px;height:38px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:500;font-size:14px;color:#fff;flex-shrink:0}
 .header-text h1{font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
 .header-text p{font-size:12px;color:rgba(255,255,255,.7)}
-.header-badge{margin-left:auto;background:rgb(39 126 250 / 10%);border:1px solid #5c85dd;color:#8ca7e0;font-size:11px;padding:3px 10px;border-radius:20px;font-family:var(--mono)}
+.header-badge{margin-left:auto;background:var(--blue-dim);border:1px solid var(--blue);color:var(--blue);font-size:11px;padding:3px 10px;border-radius:20px;font-family:var(--mono)}
 
 /* ── PIPELINE NAV ── */
 .pipeline{background:var(--s1);border-bottom:1px solid var(--border);padding:0 36px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;position:sticky;top:74px;z-index:99}
@@ -144,9 +143,9 @@ tr:hover td{background:rgba(0,0,0,.02)}
 
 /* ── METRIC CARDS ── */
 .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:14px 0}
-.metric-card{background:var(--green-dim);border:rgba(46,204,113,.3);border-radius:var(--r);padding:18px;text-align:center}
+.metric-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;text-align:center}
 .metric-card .m-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
-.metric-card .m-value{font-family:var(--mono);font-size:24px;font-weight:500;margin:8px 0 4px;color:#84d65d}
+.metric-card .m-value{font-family:var(--mono);font-size:24px;font-weight:500;margin:8px 0 4px;color:#fff}
 .metric-card .m-desc{font-size:11px;color:var(--text2)}
 .metric-card.good{border-color:rgba(46,204,113,.3);background:var(--green-dim)}
 .metric-card.good .m-value{color:var(--green)}
@@ -260,13 +259,10 @@ tr:hover td{background:rgba(0,0,0,.02)}
 <header>
   <div class="logo">Lx</div>
   <div class="header-text">
-    <h1>Linear Learn</h1>
+    <h1>LinearLearn</h1>
     <p>Interactive Linear Regression Learning System</p>
   </div>
-  <div class="header-badge">
-    <p>Built by MOULY SIKDAR <p>
-    
-  </div>
+  <div class="header-badge">CIA-1 / ML</div>
   <div class="theme-toggle" id="theme-toggle">
     <button id="btn-dark" class="active" onclick="setTheme('dark')">🌙 Dark</button>
     <button id="btn-light" onclick="setTheme('light')">☀️ Light</button>
@@ -940,29 +936,221 @@ function updateEDACharts(){
   if(xCol&&yCol)drawScatterPlot(data,xCol,yCol,'chart-scatter');
 }
 
-function destroyChart(id){if(S.charts[id]){S.charts[id].destroy();delete S.charts[id]}}
+function destroyChart(id){}
+function destroyAllCharts(){}
 
-function destroyAllCharts(){Object.keys(S.charts).forEach(id=>S.charts[id]?.destroy());S.charts={}}
+// ═══════════════════════════════════════════════════════════
+//  LC — INLINE CANVAS CHARTING ENGINE (no CDN needed)
+// ═══════════════════════════════════════════════════════════
+const LC=(()=>{
+  const P={t:32,r:20,b:54,l:68};
+  function cv(){
+    const light=document.documentElement.classList.contains('light');
+    return{
+      bg:light?'#ffffff':'#0c1220',
+      grid:light?'rgba(0,0,0,0.07)':'rgba(255,255,255,0.06)',
+      tick:light?'#64748b':'#7f8fa4',
+      label:light?'#1e293b':'#c9d6e8',
+      axis:light?'#d0d9ec':'#1e2f4a'
+    };
+  }
+  function setup(id){
+    const el=document.getElementById(id);if(!el)return null;
+    const par=el.parentElement;
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max((par.offsetWidth||400)-28,200);
+    const h=parseInt(el.getAttribute('height'))||220;
+    el.width=w*dpr;el.height=h*dpr;
+    el.style.width=w+'px';el.style.height=h+'px';
+    const ctx=el.getContext('2d');ctx.scale(dpr,dpr);
+    return{ctx,w,h};
+  }
+  function niceStep(range,n){
+    const raw=range/n;
+    const mag=Math.pow(10,Math.floor(Math.log10(raw)));
+    const f=raw/mag;
+    const nice=f<1.5?1:f<3?2:f<7?5:10;
+    return nice*mag;
+  }
+  function ticks(mn,mx,n=5){
+    if(mx===mn){mx=mn+1}
+    const step=niceStep(mx-mn,n);
+    const start=Math.floor(mn/step)*step;
+    const res=[];
+    for(let t=start;t<=mx+step*0.01;t+=step)res.push(parseFloat(t.toPrecision(10)));
+    return res;
+  }
+  function tf(v){
+    if(isNaN(v))return'';
+    const abs=Math.abs(v);
+    if(abs>=1e6)return(v/1e6).toFixed(1)+'M';
+    if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
+    if(abs<1&&abs>0)return v.toPrecision(2);
+    return v.toFixed(abs<10&&abs%1!==0?2:0);
+  }
+  function axes(ctx,w,h,xtk,ytk,x0,x1,y0,y1,xl,yl,c){
+    const pw=w-P.l-P.r,ph=h-P.t-P.b;
+    const mx=v=>P.l+(v-x0)/(x1-x0)*pw;
+    const my=v=>P.t+ph-(v-y0)/(y1-y0)*ph;
+    ctx.save();
+    // Grid lines
+    ctx.strokeStyle=c.grid;ctx.lineWidth=1;
+    ytk.forEach(t=>{const y=my(t);ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();});
+    if(xtk)xtk.forEach(t=>{const x=mx(t);ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();});
+    // Axis lines
+    ctx.strokeStyle=c.axis;
+    ctx.beginPath();ctx.moveTo(P.l,P.t+ph);ctx.lineTo(P.l+pw,P.t+ph);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(P.l,P.t);ctx.lineTo(P.l,P.t+ph);ctx.stroke();
+    // Y labels
+    ctx.fillStyle=c.tick;ctx.font='10px Courier New,monospace';ctx.textAlign='right';
+    ytk.forEach(t=>ctx.fillText(tf(t),P.l-6,my(t)+4));
+    // X labels
+    ctx.textAlign='center';
+    if(xtk)xtk.forEach(t=>ctx.fillText(tf(t),mx(t),P.t+ph+16));
+    // Axis labels
+    ctx.fillStyle=c.label;ctx.font='11px system-ui,sans-serif';
+    if(xl)ctx.fillText(xl,P.l+pw/2,h-6);
+    if(yl){ctx.save();ctx.translate(13,P.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(yl,0,0);ctx.restore();}
+    ctx.restore();
+  }
+  function legend(ctx,w,datasets,c){
+    ctx.save();ctx.font='10px system-ui,sans-serif';ctx.textAlign='left';
+    let x=P.l;const y=P.t-12;
+    datasets.forEach(ds=>{
+      const col=ds.backgroundColor||ds.borderColor||'#888';
+      ctx.fillStyle=typeof col==='string'?col:'rgba(74,144,217,0.6)';
+      if(ds.type==='line'){ctx.strokeStyle=ds.borderColor||'#888';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+14,y);ctx.stroke();}
+      else{ctx.fillRect(x,y-6,12,9);}
+      ctx.fillStyle=c.label;ctx.fillText(ds.label||'',x+18,y+4);
+      x+=ctx.measureText(ds.label||'').width+36;
+    });
+    ctx.restore();
+  }
+  return{
+    bar(id,labels,data,{xl='',yl='Count',col='rgba(74,144,217,.65)',bcol='rgba(74,144,217,1)'}={}){
+      const s=setup(id);if(!s)return;
+      const{ctx,w,h}=s;const c=cv();
+      const pw=w-P.l-P.r,ph=h-P.t-P.b;
+      ctx.fillStyle=c.bg;ctx.fillRect(0,0,w,h);
+      const ymax=Math.max(...data,1)*1.12;
+      const ytk=ticks(0,ymax);const y0=ytk[0],y1=ytk[ytk.length-1];
+      const my=v=>P.t+ph-(v-y0)/(y1-y0)*ph;
+      axes(ctx,w,h,null,ytk,0,1,y0,y1,xl,yl,c);
+      const bw=pw/data.length*0.82,gap=pw/data.length*0.18;
+      data.forEach((v,i)=>{
+        const x=P.l+(i/data.length)*pw+gap/2;
+        const bh=(v-y0)/(y1-y0)*ph;const y=P.t+ph-bh;
+        ctx.fillStyle=col;ctx.fillRect(x,y,bw,bh);
+        ctx.strokeStyle=bcol;ctx.lineWidth=1;ctx.strokeRect(x,y,bw,bh);
+      });
+      // X bin labels
+      const step=Math.max(1,Math.floor(labels.length/7));
+      ctx.fillStyle=c.tick;ctx.font='9px Courier New,monospace';ctx.textAlign='center';
+      labels.forEach((l,i)=>{if(i%step===0)ctx.fillText(l,P.l+(i/data.length)*pw+pw/data.length/2,P.t+ph+15);});
+    },
+    scatter(id,datasets,{xl='',yl=''}={}){
+      const s=setup(id);if(!s)return;
+      const{ctx,w,h}=s;const c=cv();
+      const pw=w-P.l-P.r,ph=h-P.t-P.b;
+      ctx.fillStyle=c.bg;ctx.fillRect(0,0,w,h);
+      const allX=datasets.flatMap(d=>d.data.map(p=>p.x));
+      const allY=datasets.flatMap(d=>d.data.map(p=>p.y));
+      const xpad=(Math.max(...allX)-Math.min(...allX))*0.06||1;
+      const ypad=(Math.max(...allY)-Math.min(...allY))*0.06||1;
+      const xtk=ticks(Math.min(...allX)-xpad,Math.max(...allX)+xpad);
+      const ytk=ticks(Math.min(...allY)-ypad,Math.max(...allY)+ypad);
+      const x0=xtk[0],x1=xtk[xtk.length-1];
+      const y0=ytk[0],y1=ytk[ytk.length-1];
+      const mx=v=>P.l+(v-x0)/(x1-x0)*pw;
+      const my=v=>P.t+ph-(v-y0)/(y1-y0)*ph;
+      axes(ctx,w,h,xtk,ytk,x0,x1,y0,y1,xl,yl,c);
+      datasets.forEach(ds=>{
+        if(ds.type==='line'){
+          ctx.save();ctx.strokeStyle=ds.borderColor||'rgba(245,166,35,.9)';
+          ctx.lineWidth=ds.borderWidth||2;
+          if(ds.borderDash)ctx.setLineDash(ds.borderDash);
+          ctx.beginPath();
+          ds.data.forEach((p,i)=>{const x=mx(p.x),y=my(p.y);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+          ctx.stroke();ctx.restore();
+        }else{
+          const col=ds.backgroundColor||'rgba(74,144,217,.5)';
+          ctx.fillStyle=col;
+          ds.data.forEach(p=>{const x=mx(p.x),y=my(p.y);ctx.beginPath();ctx.arc(x,y,ds.pointRadius||4,0,Math.PI*2);ctx.fill();});
+        }
+      });
+      legend(ctx,w,datasets,c);
+    },
+    line(id,labels,datasets,{xl='',yl=''}={}){
+      const s=setup(id);if(!s)return;
+      const{ctx,w,h}=s;const c=cv();
+      const pw=w-P.l-P.r,ph=h-P.t-P.b;
+      ctx.fillStyle=c.bg;ctx.fillRect(0,0,w,h);
+      const allY=datasets.flatMap(d=>d.data);
+      const ytk=ticks(Math.min(...allY),Math.max(...allY));
+      const y0=ytk[0],y1=ytk[ytk.length-1];
+      const n=labels.length;
+      const mx=i=>P.l+(i/(n-1||1))*pw;
+      const my=v=>P.t+ph-(v-y0)/(y1-y0)*ph;
+      // Grid
+      ctx.strokeStyle=c.grid;ctx.lineWidth=1;
+      ytk.forEach(t=>{const y=my(t);ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();});
+      // Lines
+      datasets.forEach(ds=>{
+        ctx.save();ctx.strokeStyle=ds.borderColor||'rgba(74,144,217,.9)';
+        ctx.lineWidth=ds.borderWidth||2;ctx.lineJoin='round';ctx.beginPath();
+        ds.data.forEach((v,i)=>{const x=mx(i),y=my(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+        ctx.stroke();ctx.restore();
+      });
+      // Axes
+      ctx.strokeStyle=c.axis;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(P.l,P.t+ph);ctx.lineTo(P.l+pw,P.t+ph);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(P.l,P.t);ctx.lineTo(P.l,P.t+ph);ctx.stroke();
+      // Labels
+      ctx.fillStyle=c.tick;ctx.font='10px Courier New,monospace';ctx.textAlign='right';
+      ytk.forEach(t=>ctx.fillText(tf(t),P.l-6,my(t)+4));
+      const xstep=Math.max(1,Math.floor(n/6));
+      ctx.textAlign='center';
+      labels.forEach((l,i)=>{if(i%xstep===0)ctx.fillText(tf(l),mx(i),P.t+ph+16);});
+      ctx.fillStyle=c.label;ctx.font='11px system-ui,sans-serif';
+      if(xl)ctx.fillText(xl,P.l+pw/2,h-6);
+      if(yl){ctx.save();ctx.translate(13,P.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(yl,0,0);ctx.restore();}
+      legend(ctx,w,datasets,c);
+    }
+  };
+})();
 
+// ── CHART DRAW FUNCTIONS ──
 function drawHistogram(data,col,canvasId){
-  destroyChart(canvasId);
   const vals=data.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));
   if(!vals.length)return;
-  const bins=20,mn=minVal(vals),mx=maxVal(vals),w=(mx-mn)/bins||1;
+  const bins=20,mn=minVal(vals),mx=maxVal(vals),bw=(mx-mn)/bins||1;
   const counts=Array(bins).fill(0);
-  vals.forEach(v=>{const b=Math.min(Math.floor((v-mn)/w),bins-1);counts[b]++});
-  const labels=Array.from({length:bins},(_,i)=>fmt(mn+i*w,1));
-  const ctx=document.getElementById(canvasId)?.getContext('2d');if(!ctx)return;
-  S.charts[canvasId]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:counts,backgroundColor:'rgba(74,144,217,.6)',borderColor:'rgba(74,144,217,1)',borderWidth:1}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10},maxRotation:45},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:col,color:'#c9d6e8',font:{size:12}}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Count',color:'#c9d6e8',font:{size:12}}}}}});
+  vals.forEach(v=>{const b=Math.min(Math.floor((v-mn)/bw),bins-1);counts[b]++;});
+  const labels=Array.from({length:bins},(_,i)=>fmt(mn+i*bw,1));
+  LC.bar(canvasId,labels,counts,{xl:col,yl:'Count'});
 }
 
 function drawScatterPlot(data,xCol,yCol,canvasId,regrLine=null){
-  destroyChart(canvasId);
   const pts=data.map(r=>({x:r[xCol],y:r[yCol]})).filter(p=>typeof p.x==='number'&&typeof p.y==='number'&&!isNaN(p.x)&&!isNaN(p.y));
-  const datasets=[{label:'Data Points',data:pts,backgroundColor:'rgba(74,144,217,.5)',pointRadius:4,pointHoverRadius:6}];
-  if(regrLine){datasets.push({label:'Regression Line',data:regrLine,type:'line',borderColor:'rgba(245,166,35,.9)',borderWidth:2.5,pointRadius:0,fill:false,tension:0})}
-  const ctx=document.getElementById(canvasId)?.getContext('2d');if(!ctx)return;
-  S.charts[canvasId]=new Chart(ctx,{type:'scatter',data:{datasets},options:{plugins:{legend:{labels:{color:'#c9d6e8',font:{size:11}}}},scales:{x:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:xCol,color:'#c9d6e8',font:{size:12}}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:yCol,color:'#c9d6e8',font:{size:12}}}}}});
+  const datasets=[{label:'Data Points',data:pts,backgroundColor:'rgba(74,144,217,.5)',pointRadius:4}];
+  if(regrLine)datasets.push({label:'Regression Line',data:regrLine,type:'line',borderColor:'rgba(245,166,35,.9)',borderWidth:2.5,borderDash:[]});
+  LC.scatter(canvasId,datasets,{xl:xCol,yl:yCol});
+}
+
+function drawPredActual(actual,predicted,canvasId){
+  const mn=Math.min(...actual,...predicted),mx=Math.max(...actual,...predicted);
+  LC.scatter(canvasId,[
+    {label:'Predictions',data:actual.map((v,i)=>({x:v,y:predicted[i]})),backgroundColor:'rgba(74,144,217,.5)',pointRadius:5},
+    {label:'Perfect fit',data:[{x:mn,y:mn},{x:mx,y:mx}],type:'line',borderColor:'rgba(46,204,113,.7)',borderWidth:1.5,borderDash:[6,4]}
+  ],{xl:'Actual',yl:'Predicted'});
+}
+
+function drawResiduals(actual,predicted,canvasId){
+  const mn=Math.min(...predicted),mx=Math.max(...predicted);
+  LC.scatter(canvasId,[
+    {label:'Residuals',data:actual.map((v,i)=>({x:predicted[i],y:v-predicted[i]})),backgroundColor:'rgba(167,139,250,.55)',pointRadius:5},
+    {label:'Zero line',data:[{x:mn,y:0},{x:mx,y:0}],type:'line',borderColor:'rgba(245,166,35,.7)',borderWidth:1.5,borderDash:[6,4]}
+  ],{xl:'Predicted',yl:'Residual'});
 }
 
 function drawCorrMatrix(data,cols){
@@ -1273,25 +1461,13 @@ function displayTrainResults(nTrain,nTest){
       drawScatterPlot(S.processedData,xc,S.targetCol,'chart-regr',lineData);
     }
     if(S.method==='gd'&&m.history?.length){
-      destroyChart('chart-cost');
-      const ctx=document.getElementById('chart-cost')?.getContext('2d');if(ctx){
-        S.charts['chart-cost']=new Chart(ctx,{type:'line',data:{labels:m.history.map(h=>h.epoch),datasets:[{label:'Cost J(β)',data:m.history.map(h=>h.cost),borderColor:'rgba(245,166,35,.9)',borderWidth:2,fill:false,pointRadius:0,tension:.4}]},options:{plugins:{legend:{labels:{color:'#c9d6e8',font:{size:11}}}},scales:{x:{ticks:{color:'#7f8fa4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Epoch',color:'#c9d6e8'}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Cost',color:'#c9d6e8'}}}}});
-      }
+      LC.line('chart-cost',m.history.map(h=>h.epoch),[{label:'Cost J(β)',data:m.history.map(h=>h.cost),borderColor:'rgba(245,166,35,.9)',borderWidth:2}],{xl:'Epoch',yl:'Cost'});
     }
     drawPredActual(S.testY,S.predictions,'chart-pred-act');
   },100);
 }
 
-function drawPredActual(actual,predicted,canvasId){
-  destroyChart(canvasId);
-  const ctx=document.getElementById(canvasId)?.getContext('2d');if(!ctx)return;
-  const mn=Math.min(...actual,...predicted),mx=Math.max(...actual,...predicted);
-  const lineData=[{x:mn,y:mn},{x:mx,y:mx}];
-  S.charts[canvasId]=new Chart(ctx,{type:'scatter',data:{datasets:[
-    {label:'Predictions',data:actual.map((v,i)=>({x:v,y:predicted[i]})),backgroundColor:'rgba(74,144,217,.5)',pointRadius:5},
-    {label:'Perfect fit',data:lineData,type:'line',borderColor:'rgba(46,204,113,.6)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
-  ]},options:{plugins:{legend:{labels:{color:'#c9d6e8',font:{size:11}}}},scales:{x:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Actual',color:'#c9d6e8'}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Predicted',color:'#c9d6e8'}}}}});
-}
+function drawPredActual_OLD(){}
 
 // ═══════════════════════════════════════════════════════════
 //  STEP 8 – PREDICT
@@ -1366,16 +1542,7 @@ function renderEval(){
   markDone(8);
 }
 
-function drawResiduals(actual,predicted,canvasId){
-  destroyChart(canvasId);
-  const ctx=document.getElementById(canvasId)?.getContext('2d');if(!ctx)return;
-  const residuals=actual.map((v,i)=>({x:predicted[i],y:v-predicted[i]}));
-  const mx=Math.max(...predicted);const mn=Math.min(...predicted);
-  S.charts[canvasId]=new Chart(ctx,{type:'scatter',data:{datasets:[
-    {label:'Residuals',data:residuals,backgroundColor:'rgba(167,139,250,.55)',pointRadius:5},
-    {label:'Zero Line',data:[{x:mn,y:0},{x:mx,y:0}],type:'line',borderColor:'rgba(245,166,35,.7)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
-  ]},options:{plugins:{legend:{labels:{color:'#c9d6e8',font:{size:11}}}},scales:{x:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Predicted',color:'#c9d6e8'}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Residual (actual - predicted)',color:'#c9d6e8'}}}}});
-}
+function drawResiduals_OLD(){}
 
 // ═══════════════════════════════════════════════════════════
 //  THEME TOGGLE
@@ -1414,9 +1581,7 @@ function setTheme(mode){
         drawScatterPlot(S.processedData,xc,S.targetCol,'chart-regr',lineData);
       }
       if(S.method==='gd'&&S.model.history?.length&&document.getElementById('chart-cost')){
-        destroyChart('chart-cost');
-        const ctx=document.getElementById('chart-cost')?.getContext('2d');
-        if(ctx){S.charts['chart-cost']=new Chart(ctx,{type:'line',data:{labels:S.model.history.map(h=>h.epoch),datasets:[{label:'Cost J(β)',data:S.model.history.map(h=>h.cost),borderColor:'rgba(245,166,35,.9)',borderWidth:2,fill:false,pointRadius:0,tension:.4}]},options:{plugins:{legend:{labels:{color:'var(--text,#c9d6e8)',font:{size:11}}}},scales:{x:{ticks:{color:'#7f8fa4',font:{size:10}},grid:{color:'rgba(128,128,128,.12)'},title:{display:true,text:'Epoch',color:'var(--text)'}},y:{ticks:{color:'#7f8fa4',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(128,128,128,.12)'},title:{display:true,text:'Cost',color:'var(--text)'}}}}});}
+        LC.line('chart-cost',S.model.history.map(h=>h.epoch),[{label:'Cost J(β)',data:S.model.history.map(h=>h.cost),borderColor:'rgba(245,166,35,.9)',borderWidth:2}],{xl:'Epoch',yl:'Cost'});
       }
     }
   },50);
@@ -1486,3 +1651,4 @@ document.getElementById('file-input').addEventListener('change',e=>{
 </script>
 </body>
 </html>
+
